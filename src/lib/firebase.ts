@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, PhoneAuthProvider, RecaptchaVerifier } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, PhoneAuthProvider, RecaptchaVerifier, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
@@ -8,12 +8,14 @@ export const db = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId)
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
+export { sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink };
+
 export const setupRecaptcha = (containerId: string) => {
   if (typeof window !== 'undefined') {
     return new RecaptchaVerifier(auth, containerId, {
       size: 'invisible',
       'callback': (response: any) => {
-        // reCAPTCHA solved, allow signInWithPhoneNumber.
+        // reCAPTCHA solved
       }
     });
   }
