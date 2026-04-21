@@ -61,11 +61,14 @@ async function startServer() {
           margin: config.margins || { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
           printBackground: true,
         },
-        stylesheet: finalCss,
         launch_options: {
           args: ['--no-sandbox', '--disable-setuid-sandbox'],
         },
       };
+
+      if (finalCss) {
+        pdfConfig.css = finalCss;
+      }
 
       // md-to-pdf usually handles PDF. For HTML, we can get it from the library too.
       // For JPG/PNG, md-to-pdf doesn't support them directly in the same way, 
@@ -112,6 +115,10 @@ async function startServer() {
               args: ['--no-sandbox', '--disable-setuid-sandbox'],
             },
         };
+
+        if (config.customCss) {
+            pdfConfig.css = config.customCss;
+        }
 
         const result = await mdToPdf({ content: item.markdown }, pdfConfig);
         zip.file(`${item.name || 'document'}.pdf`, result.content);

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:wght@700;900&family=Outfit:wght@400;700&family=EB+Garamond:ital@0;1&family=Cinzel:wght@400;700&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -12,9 +12,21 @@
   }
 }
 
-.prose {
-  @apply max-w-none;
+/* Custom Live Preview Styling based on Template */
+.preview-container {
+  @apply bg-white min-h-full transition-all duration-500 ease-in-out shadow-sm rounded-2xl m-4;
 }
+
+.prose {
+  @apply max-w-none transition-all duration-300;
+}
+
+/* We'll inject template specific classes to .prose in Editor.tsx */
+.template-minimal { font-family: 'Inter', sans-serif; }
+.template-academic { font-family: 'Georgia', serif; }
+.template-technical { font-family: 'Outfit', sans-serif; }
+.template-midnight { background: #0f172a !important; color: #f1f5f9 !important; }
+.template-retro { background: #fdf6e3 !important; color: #657b83 !important; font-family: 'Courier Prime', monospace; }
 
 .prose pre {
   @apply bg-gray-900 text-gray-100 rounded-xl p-6 font-mono text-sm;

@@ -16,10 +16,12 @@ import {
     CheckCircle2,
     Loader2,
     Printer,
+    Upload,
     X as XIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Markdown from 'react-markdown';
+import { useDropzone } from 'react-dropzone';
 import { PDF_TEMPLATES } from '../constants/templates';
 import { summarizeMarkdown } from '../services/aiService';
 import { cn } from '../lib/utils';
@@ -45,6 +47,26 @@ export function Editor({ projectId, onBack }: { projectId: string | null, onBack
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const saveTimeout = useRef<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const onDrop = (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        handleContentChange({ target: { value: text } } as any);
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'text/markdown': ['.md', '.markdown'] },
+    noClick: true,
+    noKeyboard: true
+  });
 
   useEffect(() => {
     if (!projectId) return;
@@ -140,7 +162,19 @@ export function Editor({ projectId, onBack }: { projectId: string | null, onBack
   if (!project) return null;
 
   return (
-    <div className="h-full flex flex-col bg-white overflow-hidden">
+    <div {...getRootProps()} className="h-full flex flex-col bg-white overflow-hidden relative">
+      <input {...getInputProps()} />
+      {isDragActive && (
+        <div className="absolute inset-0 bg-blue-600/10 backdrop-blur-[2px] z-[100] flex items-center justify-center border-4 border-dashed border-blue-500 rounded-lg pointer-events-none">
+          <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4 animate-in zoom-in duration-300">
+            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
+              <Upload size={40} className="text-blue-600 animate-bounce" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900 tracking-tight">Drop your Markdown file</p>
+            <p className="text-gray-500">We'll import the content instantly</p>
+          </div>
+        </div>
+      )}
       {/* Editor Header */}
       <div className="h-16 border-b border-gray-100 flex items-center justify-between px-6 bg-white shrink-0">
         <div className="flex items-center gap-4">
@@ -161,6 +195,23 @@ export function Editor({ projectId, onBack }: { projectId: string | null, onBack
         </div>
 
         <div className="flex items-center gap-3">
+          <button 
+             onClick={() => fileInputRef.current?.click()}
+             className="p-2.5 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-100 transition-all border border-gray-200"
+             title="Upload MD File"
+          >
+             <Upload size={20} />
+             <input 
+               type="file" 
+               ref={fileInputRef} 
+               className="hidden" 
+               accept=".md,.markdown"
+               onChange={(e) => {
+                 const file = e.target.files?.[0];
+                 if (file) onDrop([file]);
+               }}
+             />
+          </button>
           <button 
             onClick={() => setIsPreviewOpen(!isPreviewOpen)}
             className={cn(
@@ -232,18 +283,21 @@ export function Editor({ projectId, onBack }: { projectId: string | null, onBack
                </div>
                
                {aiSummary && (
-                 <div className="m-10 mb-0 p-6 bg-blue-50 border border-blue-100 rounded-2xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                       <button onClick={() => setAiSummary(null)} className="text-blue-400 hover:text-blue-600"><XIcon size={14} /></button>
+                 <div className="m-10 mb-0 p-6 bg-blue-50/50 border border-blue-100 rounded-3xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                       <button onClick={() => setAiSummary(null)} className="p-1 text-blue-400 hover:text-blue-600 bg-white rounded-lg shadow-sm"><XIcon size={14} /></button>
                     </div>
-                    <h4 className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-2 flex items-center gap-2">
-                       <Sparkles size={12} /> AI Summary
+                    <h4 className="text-xs font-black text-blue-600 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+                       <Sparkles size={12} /> Intelligence Summary
                     </h4>
-                    <p className="text-sm text-blue-800 leading-relaxed font-medium">{aiSummary}</p>
+                    <p className="text-sm text-blue-900 leading-relaxed font-medium">{aiSummary}</p>
                  </div>
                )}
 
-               <div className="flex-1 overflow-auto p-10 prose prose-blue max-w-none prose-img:rounded-xl">
+               <div className={cn(
+                  "flex-1 overflow-auto p-10 prose prose-blue max-w-none prose-img:rounded-2xl transition-all duration-500",
+                  `template-${project.settings.template}`
+               )}>
                   <Markdown>{content || '*Preview will appear here...*'}</Markdown>
                </div>
             </div>
