@@ -86,33 +86,6 @@ export function Settings({ user, getToken }: SettingsProps) {
               <p>This token is valid for 1 hour. Never share your JWT in public screenshots or with untrusted parties. It grants full access to your projects via our CLI/API.</p>
            </div>
         </div>
-
-        {/* Authorized Domains Fix Card */}
-        <div className="bg-amber-50 p-8 rounded-3xl border border-amber-100 space-y-6">
-           <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600">
-                 <Globe size={20} />
-              </div>
-              <div>
-                 <h3 className="font-bold text-gray-900">Domain Whitelisting (Localhost Fix)</h3>
-                 <p className="text-xs text-amber-600/70">Required for Google OAuth and OTP verification in the AI Studio environment.</p>
-              </div>
-           </div>
-
-           <div className="space-y-3">
-              <div className="p-4 bg-white/50 rounded-xl border border-amber-200">
-                <p className="text-xs font-bold text-amber-900 mb-2 flex items-center gap-2">
-                   <AlertTriangle size={14} /> Add these to Firebase Authorized Domains:
-                </p>
-                <div className="space-y-1 font-mono text-[10px] text-amber-800">
-                   <div className="p-2 bg-white rounded border border-amber-100 select-all font-bold">hearings-presidential-automobile-blogging.trycloudflare.com</div>
-                   <div className="p-2 bg-white rounded border border-amber-100 select-all">ais-dev-okls6c2auho2wrcswqvabc-780209537311.asia-southeast1.run.app</div>
-                   <div className="p-2 bg-white rounded border border-amber-100 select-all">ais-pre-okls6c2auho2wrcswqvabc-780209537311.asia-southeast1.run.app</div>
-                </div>
-              </div>
-              <p className="text-[10px] text-amber-700 italic">Navigate to: <strong>Firebase Console &gt; Auth &gt; Settings &gt; Authorized Domains</strong> to add these.</p>
-           </div>
-        </div>
       </div>
     </div>
   );

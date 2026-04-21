@@ -9,7 +9,6 @@ import {
     Save, 
     Eye, 
     EyeOff, 
-    Sparkles, 
     Columns,
     Type,
     Maximize2,
@@ -20,10 +19,9 @@ import {
     X as XIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import Markdown from 'react-markdown';
+import MarkdownPreview from '@uiw/react-markdown-preview';
 import { useDropzone } from 'react-dropzone';
 import { PDF_TEMPLATES } from '../constants/templates';
-import { summarizeMarkdown } from '../services/aiService';
 import { cn } from '../lib/utils';
 import confetti from 'canvas-confetti';
 
@@ -46,8 +44,6 @@ export function Editor({ projectId, onBack }: { projectId: string | null, onBack
   const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const saveTimeout = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -158,24 +154,6 @@ export function Editor({ projectId, onBack }: { projectId: string | null, onBack
     }
   };
 
-  const handleAiSummary = async () => {
-    setIsAiLoading(true);
-    const toastId = toast.loading('Consulting Intelligence Engine...');
-    try {
-      const summary = await summarizeMarkdown(content);
-      if (summary) {
-        setAiSummary(summary);
-        toast.success('Intelligence Summary ready!', { id: toastId });
-      } else {
-        toast.error('Could not generate summary', { id: toastId });
-      }
-    } catch (err) {
-      toast.error('AI processing error', { id: toastId });
-    } finally {
-      setIsAiLoading(false);
-    }
-  };
-
   if (!project) return null;
 
   return (
@@ -236,15 +214,6 @@ export function Editor({ projectId, onBack }: { projectId: string | null, onBack
             )}
           >
             {isPreviewOpen ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
-          <button 
-             onClick={handleAiSummary}
-             disabled={isAiLoading}
-             className="px-3 md:px-4 py-2 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 transition-all disabled:opacity-50 flex items-center gap-2 text-[10px] md:text-sm font-semibold border border-blue-100/50"
-             title="AI Summary"
-          >
-             {isAiLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-             <span className="hidden sm:inline">AI Insights</span>
           </button>
           <div className="h-6 w-[1px] bg-gray-200 mx-1 hidden sm:block"></div>
           <button 
@@ -333,20 +302,15 @@ export function Editor({ projectId, onBack }: { projectId: string | null, onBack
                   </span>
                </div>
                
-               <div className="flex-1 overflow-auto p-6 md:p-10 prose prose-blue max-w-none prose-img:rounded-2xl">
-                  {aiSummary && (
-                    <div className="mb-8 p-6 bg-blue-50/50 border border-blue-100 rounded-3xl relative overflow-hidden group">
-                       <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => setAiSummary(null)} className="p-1 text-blue-400 hover:text-blue-600 bg-white rounded-lg shadow-sm"><XIcon size={14} /></button>
-                       </div>
-                       <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
-                          <Sparkles size={12} /> AI Insight
-                       </h4>
-                       <p className="text-sm text-blue-900 leading-relaxed font-medium">{aiSummary}</p>
-                    </div>
-                  )}
+               <div className="flex-1 overflow-auto p-4 md:p-6 lg:p-10 prose prose-blue max-w-none prose-img:rounded-2xl">
                   <div className={cn("transition-all duration-500", `template-${project.settings.template}`)}>
-                    <Markdown>{content || '*Preview will appear here...*'}</Markdown>
+                    <MarkdownPreview 
+                      source={content || '*Preview will appear here...*'} 
+                      style={{ backgroundColor: 'transparent' }}
+                      wrapperElement={{
+                        "data-color-mode": "light"
+                      }}
+                    />
                   </div>
                </div>
             </div>
