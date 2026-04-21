@@ -34,5 +34,15 @@ export function useAuth() {
     });
   }, []);
 
-  return { user, loading, isAdmin, login: signInWithGoogle, logout: () => signOut(auth) };
+  return { 
+    user, 
+    loading, 
+    isAdmin, 
+    login: signInWithGoogle, 
+    logout: () => signOut(auth),
+    getToken: async () => {
+      if (user) return await user.getIdToken();
+      return null;
+    }
+  };
 }

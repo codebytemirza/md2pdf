@@ -25,6 +25,8 @@ import { ProjectList } from './components/ProjectList';
 import { AdminPanel } from './components/AdminPanel';
 import { Notifications } from './components/Notifications';
 import { BatchConverter } from './components/BatchConverter';
+import { Settings as SettingsView } from './components/Settings';
+import { Login } from './components/Login';
 import { cn } from './lib/utils';
 import { db } from './lib/firebase';
 import { collection, query, where, onSnapshot, addDoc, Timestamp } from 'firebase/firestore';
@@ -32,7 +34,7 @@ import { collection, query, where, onSnapshot, addDoc, Timestamp } from 'firebas
 type View = 'dashboard' | 'editor' | 'batch' | 'admin' | 'settings';
 
 export default function App() {
-  const { user, loading, isAdmin, login, logout } = useAuth();
+  const { user, loading, isAdmin, login, logout, getToken } = useAuth();
   const [activeView, setActiveView] = useState<View>('dashboard');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -87,31 +89,7 @@ export default function App() {
   }
 
   if (!user) {
-    return (
-      <div className="min-h-screen bg-white flex flex-col justify-center items-center p-6 bg-gradient-to-br from-blue-50 to-white">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-10 border border-blue-100"
-        >
-          <div className="flex justify-center mb-8">
-            <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg transform rotate-6">
-              <FileText className="text-white w-10 h-10 -rotate-6" />
-            </div>
-          </div>
-          <h1 className="text-4xl font-extrabold text-center text-gray-900 mb-2">MD2PDF Pro</h1>
-          <p className="text-center text-gray-500 mb-8">Elevate your markdown with production-grade PDF conversion and team collaboration.</p>
-          <button 
-            onClick={login}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl flex items-center justify-center transition-all transform hover:scale-105 shadow-md active:scale-95"
-          >
-            <User className="mr-2" size={20} />
-            Continue with Google
-          </button>
-          <p className="text-xs text-center text-gray-400 mt-6 font-mono">SECURE ACCESS VIA FIREBASE AUTH</p>
-        </motion.div>
-      </div>
-    );
+    return <Login login={login} />;
   }
 
   const renderView = () => {
@@ -124,6 +102,8 @@ export default function App() {
         return <Editor projectId={selectedProjectId} onBack={() => { setActiveView('dashboard'); setSelectedProjectId(null); }} />;
       case 'admin':
         return isAdmin ? <AdminPanel /> : <div>Access Denied</div>;
+      case 'settings':
+        return <SettingsView user={user} getToken={getToken} />;
       default:
         return <ProjectList onSelectProject={(id) => { setSelectedProjectId(id); setActiveView('editor'); }} onCreateProject={handleCreateProject} />;
     }
@@ -187,6 +167,13 @@ export default function App() {
               collapsed={!isSidebarOpen} 
             />
           )}
+          <SidebarItem 
+            icon={<Settings size={20}/>} 
+            label="Settings" 
+            active={activeView === 'settings'} 
+            onClick={() => setActiveView('settings')} 
+            collapsed={!isSidebarOpen} 
+          />
         </nav>
 
         <div className="p-4 border-t border-gray-100">
