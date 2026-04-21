@@ -150,6 +150,17 @@ export function Login({ login }: LoginProps) {
           </p>
         </div>
         
+        <div className="mt-8 p-4 bg-amber-50 rounded-2xl border border-amber-100">
+          <p className="text-[10px] text-amber-800 font-bold uppercase tracking-widest mb-2 flex items-center gap-1">
+             <ShieldCheck size={10} /> Authorized Domains required
+          </p>
+          <div className="space-y-1 font-mono text-[9px] text-amber-700 leading-tight">
+            <p className="mb-1">Firebase requires you to whitelist these domains in <strong>Auth &gt; Settings &gt; Authorized Domains</strong>:</p>
+            <div className="p-1.5 bg-white/50 rounded border border-amber-200 select-all font-bold">hearings-presidential-automobile-blogging.trycloudflare.com</div>
+            <div className="p-1.5 bg-white/50 rounded border border-amber-200 select-all">ais-dev-okls6c2auho2wrcswqvabc-780209537311.asia-southeast1.run.app</div>
+          </div>
+        </div>
+
         <p className="text-[10px] text-center text-gray-400 mt-6 font-mono tracking-widest uppercase">Secure JWT Access</p>
       </motion.div>
     </div>

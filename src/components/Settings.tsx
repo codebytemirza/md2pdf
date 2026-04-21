@@ -105,6 +105,7 @@ export function Settings({ user, getToken }: SettingsProps) {
                    <AlertTriangle size={14} /> Add these to Firebase Authorized Domains:
                 </p>
                 <div className="space-y-1 font-mono text-[10px] text-amber-800">
+                   <div className="p-2 bg-white rounded border border-amber-100 select-all font-bold">hearings-presidential-automobile-blogging.trycloudflare.com</div>
                    <div className="p-2 bg-white rounded border border-amber-100 select-all">ais-dev-okls6c2auho2wrcswqvabc-780209537311.asia-southeast1.run.app</div>
                    <div className="p-2 bg-white rounded border border-amber-100 select-all">ais-pre-okls6c2auho2wrcswqvabc-780209537311.asia-southeast1.run.app</div>
                 </div>
