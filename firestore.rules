@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isOwner(resource) {
+      return isSignedIn() && resource.data.ownerId == request.auth.uid;
+    }
+
+    function isTeamMember(projectData) {
+      return isSignedIn() && (projectData.ownerId == request.auth.uid || request.auth.uid in projectData.teamMembers);
+    }
+
+    // Entities Validations
+    function isValidProject(data) {
+      return data.keys().hasAll(['name', 'ownerId']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.ownerId == request.auth.uid;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['email']) &&
+             data.email is string && data.email.size() <= 200;
+    }
+
+    // Projects Collection
+    match /projects/{projectId} {
+      allow read: if isSignedIn() && isTeamMember(resource.data);
+      allow create: if isEmailVerified() && isValidId(projectId) && isValidProject(request.resource.data);
+      allow update: if isSignedIn() && (
+        isAdmin() || (
+            isTeamMember(resource.data) && 
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'description', 'settings', 'teamMembers', 'updatedAt']) &&
+            request.resource.data.ownerId == resource.data.ownerId // Immutable owner
+        )
+      );
+      allow delete: if isAdmin() || isOwner(resource);
+
+      // Conversions Subcollection
+      match /conversions/{conversionId} {
+        allow read: if isSignedIn() && isTeamMember(get(/databases/$(database)/documents/projects/$(projectId)).data);
+        allow create: if isSignedIn() && isValidId(conversionId) && 
+                      isTeamMember(get(/databases/$(database)/documents/projects/$(projectId)).data);
+        allow delete: if isAdmin() || isOwner(get(/databases/$(database)/documents/projects/$(projectId)));
+      }
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isEmailVerified() && userId == request.auth.uid && isValidUser(request.resource.data);
+      allow update: if isSignedIn() && (isAdmin() || (userId == request.auth.uid && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])));
+    }
+
+    // Notifications Collection
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isAdmin() || isSignedIn(); // Allow apps to create notification for others? Or restrict to system?
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid && 
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+    }
+  }
+}
