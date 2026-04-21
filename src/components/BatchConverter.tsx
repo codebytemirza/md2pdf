@@ -4,6 +4,8 @@ import { Upload, File, X, Loader2, Download, AlertCircle, CheckCircle2, Settings
 import JSZip from 'jszip';
 import { PDF_TEMPLATES } from '../constants/templates';
 import { cn } from '../lib/utils';
+import { Toaster, toast } from 'react-hot-toast';
+import confetti from 'canvas-confetti';
 
 export function BatchConverter() {
   const [files, setFiles] = useState<{ file: File, id: string, status: 'pending' | 'converting' | 'completed' | 'error' }[]>([]);
@@ -31,6 +33,7 @@ export function BatchConverter() {
   const processBatch = async () => {
     if (files.length === 0) return;
     setIsProcessing(true);
+    const toastId = toast.loading(`Converting ${files.length} documents...`);
     
     try {
       const items = await Promise.all(files.map(async (f) => ({
@@ -61,8 +64,15 @@ export function BatchConverter() {
       window.URL.revokeObjectURL(url);
 
       setFiles(prev => prev.map(f => ({ ...f, status: 'completed' })));
+      toast.success('Batch processing complete!', { id: toastId });
+      confetti({
+        particleCount: 200,
+        spread: 90,
+        origin: { y: 0.6 },
+        colors: ['#2563eb', '#3b82f6', '#60a5fa']
+      });
     } catch (err) {
-      alert('Batch processing failed');
+      toast.error('Batch processing failed', { id: toastId });
     } finally {
       setIsProcessing(false);
     }

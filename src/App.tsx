@@ -30,6 +30,8 @@ import { Login } from './components/Login';
 import { cn } from './lib/utils';
 import { db } from './lib/firebase';
 import { collection, query, where, onSnapshot, addDoc, Timestamp } from 'firebase/firestore';
+import { Toaster, toast } from 'react-hot-toast';
+import confetti from 'canvas-confetti';
 
 type View = 'dashboard' | 'editor' | 'batch' | 'admin' | 'settings';
 
@@ -65,8 +67,16 @@ export default function App() {
       });
       setSelectedProjectId(docRef.id);
       setActiveView('editor');
+      toast.success('Project created successfully!');
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#2563eb', '#3b82f6', '#60a5fa']
+      });
     } catch (error) {
       console.error("Error creating project:", error);
+      toast.error('Failed to create project');
     }
   };
 
@@ -111,6 +121,17 @@ export default function App() {
 
   return (
     <div className="h-screen flex bg-gray-50 overflow-hidden font-sans">
+      <Toaster position="top-right" toastOptions={{
+        style: {
+          borderRadius: '16px',
+          background: '#FFF',
+          color: '#1e293b',
+          boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+          padding: '16px 24px',
+          fontSize: '14px',
+          fontWeight: '600'
+        }
+      }} />
       {/* Sidebar */}
       <motion.aside 
         initial={false}

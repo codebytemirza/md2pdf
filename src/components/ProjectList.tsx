@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { collection, query, where, onSnapshot, addDoc, orderBy, Timestamp } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
-import { Plus, Search, Folder, Clock, Users, MoreVertical, ExternalLink } from 'lucide-react';
+import { Plus, Search, Folder, Clock, Users, MoreVertical, ExternalLink, FileText } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 
@@ -110,8 +110,4 @@ export function ProjectList({ onSelectProject, onCreateProject }: { onSelectProj
       )}
     </div>
   );
-}
-
-function FileText({ className, size }: { className?: string, size?: number }) {
-    return <Folder className={className} size={size} />;
 }

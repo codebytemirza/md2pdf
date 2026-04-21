@@ -27,6 +27,8 @@ import { summarizeMarkdown } from '../services/aiService';
 import { cn } from '../lib/utils';
 import confetti from 'canvas-confetti';
 
+import { Toaster, toast } from 'react-hot-toast';
+
 export function Editor({ projectId, onBack }: { projectId: string | null, onBack: () => void }) {
   const [project, setProject] = useState<any>(projectId ? null : {
     name: 'Quick Convert',
@@ -52,10 +54,12 @@ export function Editor({ projectId, onBack }: { projectId: string | null, onBack
   const onDrop = (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
+      toast.loading(`Importing ${file.name}...`, { duration: 1000 });
       const reader = new FileReader();
       reader.onload = (e) => {
         const text = e.target?.result as string;
         handleContentChange({ target: { value: text } } as any);
+        toast.success(`Imported: ${file.name}`);
       };
       reader.readAsText(file);
     }
@@ -145,8 +149,9 @@ export function Editor({ projectId, onBack }: { projectId: string | null, onBack
         origin: { y: 0.6 },
         colors: ['#2563eb', '#3b82f6', '#60a5fa']
       });
+      toast.success('Document exported successfully!');
     } catch (err) {
-      alert('Failed to generate file');
+      toast.error('Failed to generate file');
     } finally {
       setIsConverting(false);
     }
@@ -154,9 +159,20 @@ export function Editor({ projectId, onBack }: { projectId: string | null, onBack
 
   const handleAiSummary = async () => {
     setIsAiLoading(true);
-    const summary = await summarizeMarkdown(content);
-    setAiSummary(summary);
-    setIsAiLoading(false);
+    const toastId = toast.loading('Consulting Intelligence Engine...');
+    try {
+      const summary = await summarizeMarkdown(content);
+      if (summary) {
+        setAiSummary(summary);
+        toast.success('Intelligence Summary ready!', { id: toastId });
+      } else {
+        toast.error('Could not generate summary', { id: toastId });
+      }
+    } catch (err) {
+      toast.error('AI processing error', { id: toastId });
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   if (!project) return null;
@@ -197,10 +213,11 @@ export function Editor({ projectId, onBack }: { projectId: string | null, onBack
         <div className="flex items-center gap-3">
           <button 
              onClick={() => fileInputRef.current?.click()}
-             className="p-2.5 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-100 transition-all border border-gray-200"
+             className="px-4 py-2.5 bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-all border border-gray-200 flex items-center gap-2 text-sm font-semibold shadow-sm"
              title="Upload MD File"
           >
-             <Upload size={20} />
+             <Upload size={18} className="text-gray-400" />
+             Import MD
              <input 
                type="file" 
                ref={fileInputRef} 
@@ -233,19 +250,29 @@ export function Editor({ projectId, onBack }: { projectId: string | null, onBack
           <button 
              onClick={handleAiSummary}
              disabled={isAiLoading}
-             className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all disabled:opacity-50"
+             className="px-4 py-2.5 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 transition-all disabled:opacity-50 flex items-center gap-2 text-sm font-semibold border border-blue-100/50"
              title="AI Summary"
           >
-             {isAiLoading ? <Loader2 size={20} className="animate-spin" /> : <Sparkles size={20} />}
+             {isAiLoading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
+             AI Insights
           </button>
           <div className="h-6 w-[1px] bg-gray-200 mx-1"></div>
           <button 
             onClick={() => handleConvert('pdf')}
             disabled={isConverting}
-            className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center gap-2"
+            className="bg-blue-600 text-white px-8 py-2.5 rounded-xl font-bold text-sm shadow-xl shadow-blue-100 hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center gap-2 group"
           >
-            {isConverting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
-            Generate PDF
+            {isConverting ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <Download size={18} className="group-hover:translate-y-0.5 transition-transform" />
+                Export PDF
+              </>
+            )}
           </button>
           <button 
             onClick={() => handleConvert('html')}
