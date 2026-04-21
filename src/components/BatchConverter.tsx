@@ -4,6 +4,8 @@ import { Upload, File, X, Loader2, Download, AlertCircle, CheckCircle2, Settings
 import JSZip from 'jszip';
 import { PDF_TEMPLATES } from '../constants/templates';
 import { cn } from '../lib/utils';
+import { Toaster, toast } from 'react-hot-toast';
+import confetti from 'canvas-confetti';
 
 export function BatchConverter() {
   const [files, setFiles] = useState<{ file: File, id: string, status: 'pending' | 'converting' | 'completed' | 'error' }[]>([]);
@@ -31,6 +33,7 @@ export function BatchConverter() {
   const processBatch = async () => {
     if (files.length === 0) return;
     setIsProcessing(true);
+    const toastId = toast.loading(`Converting ${files.length} documents...`);
     
     try {
       const items = await Promise.all(files.map(async (f) => ({
@@ -61,36 +64,43 @@ export function BatchConverter() {
       window.URL.revokeObjectURL(url);
 
       setFiles(prev => prev.map(f => ({ ...f, status: 'completed' })));
+      toast.success('Batch processing complete!', { id: toastId });
+      confetti({
+        particleCount: 200,
+        spread: 90,
+        origin: { y: 0.6 },
+        colors: ['#2563eb', '#3b82f6', '#60a5fa']
+      });
     } catch (err) {
-      alert('Batch processing failed');
+      toast.error('Batch processing failed', { id: toastId });
     } finally {
       setIsProcessing(false);
     }
   };
 
   return (
-    <div className="p-10 max-w-4xl mx-auto">
-      <div className="mb-10 text-center">
-         <h1 className="text-3xl font-bold text-gray-900">Batch Converter</h1>
-         <p className="text-gray-500 mt-2">Upload multiple markdown files to convert them all at once into a ZIP archive.</p>
+    <div className="p-4 md:p-10 max-w-4xl mx-auto">
+      <div className="mb-6 md:mb-10 text-center">
+         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Batch Converter</h1>
+         <p className="text-gray-500 mt-2 text-sm md:text-base">Upload multiple markdown files to convert them into a ZIP archive.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        <div className="lg:col-span-2 space-y-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-start">
+        <div className="lg:col-span-2 space-y-6 md:space-y-8">
           <div 
             {...getRootProps()} 
             className={`
-              border-3 border-dashed rounded-3xl p-16 transition-all cursor-pointer text-center
+              border-3 border-dashed rounded-3xl p-8 md:p-16 transition-all cursor-pointer text-center
               ${isDragActive ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200 bg-white hover:border-blue-400 hover:bg-gray-50'}
             `}
           >
             <input {...getInputProps()} />
             <div className="flex flex-col items-center">
-               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                  <Upload className="text-blue-600" size={32} />
+               <div className="w-12 h-12 md:w-16 md:h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                  <Upload className="text-blue-600" size={28} />
                </div>
-               <p className="text-xl font-bold text-gray-900">Drag & drop markdown files here</p>
-               <p className="text-gray-400 mt-1">or click to select files from your computer</p>
+               <p className="text-lg md:text-xl font-bold text-gray-900 leading-tight">Drag & drop files here</p>
+               <p className="text-gray-400 mt-1 text-sm md:text-base">or click to select files</p>
             </div>
           </div>
 

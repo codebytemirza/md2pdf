@@ -29,7 +29,9 @@ import { Settings as SettingsView } from './components/Settings';
 import { Login } from './components/Login';
 import { cn } from './lib/utils';
 import { db } from './lib/firebase';
-import { collection, query, where, onSnapshot, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, Timestamp, deleteDoc, updateDoc, doc } from 'firebase/firestore';
+import { Toaster, toast } from 'react-hot-toast';
+import confetti from 'canvas-confetti';
 
 type View = 'dashboard' | 'editor' | 'batch' | 'admin' | 'settings';
 
@@ -65,8 +67,46 @@ export default function App() {
       });
       setSelectedProjectId(docRef.id);
       setActiveView('editor');
+      toast.success('Project created successfully!');
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#2563eb', '#3b82f6', '#60a5fa']
+      });
     } catch (error) {
       console.error("Error creating project:", error);
+      toast.error('Failed to create project');
+    }
+  };
+
+  const handleRenameProject = async (id: string, currentName: string) => {
+    const newName = window.prompt('Enter new project name:', currentName);
+    if (!newName || newName === currentName) return;
+
+    try {
+      await updateDoc(doc(db, 'projects', id), {
+        name: newName,
+        updatedAt: Timestamp.now()
+      });
+      toast.success('Project renamed');
+    } catch (error) {
+      toast.error('Failed to rename project');
+    }
+  };
+
+  const handleDeleteProject = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this project? This action cannot be undone.')) return;
+
+    try {
+      await deleteDoc(doc(db, 'projects', id));
+      toast.success('Project deleted');
+      if (selectedProjectId === id) {
+        setSelectedProjectId(null);
+        setActiveView('dashboard');
+      }
+    } catch (error) {
+      toast.error('Failed to delete project');
     }
   };
 
@@ -95,7 +135,14 @@ export default function App() {
   const renderView = () => {
     switch (activeView) {
       case 'dashboard':
-        return <ProjectList onSelectProject={(id) => { setSelectedProjectId(id); setActiveView('editor'); }} onCreateProject={handleCreateProject} />;
+        return (
+          <ProjectList 
+            onSelectProject={(id) => { setSelectedProjectId(id); setActiveView('editor'); }} 
+            onCreateProject={handleCreateProject}
+            onRenameProject={handleRenameProject}
+            onDeleteProject={handleDeleteProject}
+          />
+        );
       case 'batch':
         return <BatchConverter />;
       case 'editor':
@@ -105,19 +152,70 @@ export default function App() {
       case 'settings':
         return <SettingsView user={user} getToken={getToken} />;
       default:
-        return <ProjectList onSelectProject={(id) => { setSelectedProjectId(id); setActiveView('editor'); }} onCreateProject={handleCreateProject} />;
+        return (
+          <ProjectList 
+            onSelectProject={(id) => { setSelectedProjectId(id); setActiveView('editor'); }} 
+            onCreateProject={handleCreateProject}
+            onRenameProject={handleRenameProject}
+            onDeleteProject={handleDeleteProject}
+          />
+        );
     }
   };
 
   return (
-    <div className="h-screen flex bg-gray-50 overflow-hidden font-sans">
+    <div className="h-screen flex flex-col md:flex-row bg-gray-50 overflow-hidden font-sans">
+      <Toaster position="top-right" toastOptions={{
+        style: {
+          borderRadius: '16px',
+          background: '#FFF',
+          color: '#1e293b',
+          boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+          padding: '16px 24px',
+          fontSize: '14px',
+          fontWeight: '600'
+        }
+      }} />
+      
+      {/* Mobile Header */}
+      <div className="md:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between sticky top-0 z-30">
+        <div className="flex items-center gap-3">
+           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <FileText className="text-white w-5 h-5" />
+           </div>
+           <span className="font-bold text-lg text-gray-900 tracking-tight">MD2PDF</span>
+        </div>
+        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+          <Menu size={24} className="text-gray-500" />
+        </button>
+      </div>
+
+      {/* Sidebar overlay for mobile */}
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsSidebarOpen(false)}
+            className="md:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+          />
+        )}
+      </AnimatePresence>
+
       {/* Sidebar */}
       <motion.aside 
         initial={false}
-        animate={{ width: isSidebarOpen ? 280 : 80 }}
-        className="bg-white border-r border-gray-200 flex flex-col relative z-20 shadow-sm"
+        animate={{ 
+          width: isSidebarOpen ? 280 : 80,
+          x: typeof window !== 'undefined' && window.innerWidth < 768 && !isSidebarOpen ? -280 : 0
+        }}
+        className={cn(
+          "bg-white border-r border-gray-200 flex flex-col fixed md:relative z-50 h-full shadow-xl md:shadow-sm transition-transform",
+          !isSidebarOpen && "md:w-20"
+        )}
       >
-        <div className="p-6 flex items-center justify-between">
+        <div className="p-6 hidden md:flex items-center justify-between">
           <div className={cn("flex items-center gap-3", !isSidebarOpen && "hidden")}>
              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
                 <FileText className="text-white w-5 h-5" />
@@ -129,7 +227,7 @@ export default function App() {
           </button>
         </div>
 
-        <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto overflow-x-hidden">
+        <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto overflow-x-hidden" onClick={() => { if(window.innerWidth < 768) setIsSidebarOpen(false); }}>
           <SidebarItem 
             icon={<Layers size={20}/>} 
             label="Dashboard" 

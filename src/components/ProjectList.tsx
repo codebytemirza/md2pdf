@@ -2,11 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { collection, query, where, onSnapshot, addDoc, orderBy, Timestamp } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
-import { Plus, Search, Folder, Clock, Users, MoreVertical, ExternalLink } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Plus, Search, Folder, Clock, Users, MoreVertical, ExternalLink, FileText, Trash2, Edit3 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 
-export function ProjectList({ onSelectProject, onCreateProject }: { onSelectProject: (id: string) => void, onCreateProject: () => void }) {
+export function ProjectList({ onSelectProject, onCreateProject, onRenameProject, onDeleteProject }: { 
+  onSelectProject: (id: string) => void, 
+  onCreateProject: () => void,
+  onRenameProject: (id: string, currentName: string) => void,
+  onDeleteProject: (id: string) => void
+}) {
   const { user } = useAuth();
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,28 +40,28 @@ export function ProjectList({ onSelectProject, onCreateProject }: { onSelectProj
   const filteredProjects = projects.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="p-10 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-10">
+    <div className="p-4 md:p-10 max-w-6xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 md:mb-10">
         <div>
-           <h1 className="text-3xl font-bold text-gray-900">Your Projects</h1>
-           <p className="text-gray-500 mt-1">Manage and organize your markdown conversions.</p>
+           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Your Projects</h1>
+           <p className="text-gray-500 mt-1 text-sm md:text-base">Manage and organize your markdown conversions.</p>
         </div>
         <button 
           onClick={onCreateProject}
-          className="flex items-center gap-2 bg-white text-gray-900 px-6 py-3 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-all font-bold active:scale-95"
+          className="flex items-center gap-2 bg-blue-600 sm:bg-white text-white sm:text-gray-900 px-6 py-3 rounded-2xl border border-blue-600 sm:border-gray-200 shadow-sm hover:shadow-md transition-all font-bold active:scale-95 w-full sm:w-auto justify-center"
         >
-          <Plus size={20} className="text-blue-600" /> Create Project
+          <Plus size={20} className="sm:text-blue-600 text-white" /> Create Project
         </button>
       </div>
 
-      <div className="relative mb-10">
+      <div className="relative mb-8 md:mb-10">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
         <input 
           type="text" 
           placeholder="Search projects..." 
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-white border border-gray-200 rounded-2xl py-4 pl-12 pr-6 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all shadow-sm"
+          className="w-full bg-white border border-gray-200 rounded-2xl py-3 md:py-4 pl-12 pr-6 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all shadow-sm"
         />
       </div>
 
@@ -72,39 +77,13 @@ export function ProjectList({ onSelectProject, onCreateProject }: { onSelectProj
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProjects.map((project) => (
-            <motion.div 
-              key={project.id}
-              layoutId={project.id}
-              whileHover={{ y: -5 }}
-              onClick={() => onSelectProject(project.id)}
-              className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-blue-100 transition-all cursor-pointer group flex flex-col relative"
-            >
-              <div className="flex items-start justify-between mb-4">
-                 <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center group-hover:bg-blue-50 transition-colors">
-                    <FileText className="text-gray-400 group-hover:text-blue-600 transition-colors" size={24} />
-                 </div>
-                 <button className="p-2 hover:bg-gray-100 rounded-lg">
-                    <MoreVertical size={18} className="text-gray-400" />
-                 </button>
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1">{project.name}</h3>
-              <p className="text-sm text-gray-500 mt-1 line-clamp-2 min-h-[40px]">{project.description}</p>
-              
-              <div className="mt-6 pt-6 border-t border-gray-50 flex items-center justify-between text-xs font-semibold text-gray-400">
-                 <div className="flex items-center gap-1.5">
-                    <Clock size={14} />
-                    <span>{new Date(project.updatedAt?.seconds * 1000).toLocaleDateString()}</span>
-                 </div>
-                 <div className="flex items-center gap-1.5">
-                    <Users size={14} />
-                    <span>{1 + (project.teamMembers?.length || 0)}</span>
-                 </div>
-              </div>
-
-              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                <ExternalLink size={16} className="text-blue-400" />
-              </div>
-            </motion.div>
+            <ProjectCard 
+               key={project.id} 
+               project={project} 
+               onSelect={onSelectProject} 
+               onRename={onRenameProject} 
+               onDelete={onDeleteProject} 
+            />
           ))}
         </div>
       )}
@@ -112,6 +91,90 @@ export function ProjectList({ onSelectProject, onCreateProject }: { onSelectProj
   );
 }
 
-function FileText({ className, size }: { className?: string, size?: number }) {
-    return <Folder className={className} size={size} />;
+function ProjectCard({ project, onSelect, onRename, onDelete }: { 
+  project: any, 
+  onSelect: (id: string) => void, 
+  onRename: (id: string, name: string) => void,
+  onDelete: (id: string) => void
+}) {
+  const [showMenu, setShowMenu] = useState(false);
+
+  return (
+    <motion.div 
+      layoutId={project.id}
+      whileHover={{ y: -5 }}
+      onClick={(e) => {
+        if (!showMenu) onSelect(project.id);
+      }}
+      className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-blue-100 transition-all cursor-pointer group flex flex-col relative"
+    >
+      <div className="flex items-start justify-between mb-4">
+         <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center group-hover:bg-blue-50 transition-colors">
+            <FileText className="text-gray-400 group-hover:text-blue-600 transition-colors" size={24} />
+         </div>
+         <div className="relative">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMenu(!showMenu);
+              }}
+              className="p-2 hover:bg-gray-100 rounded-xl transition-colors relative z-10"
+            >
+              <MoreVertical size={18} className="text-gray-400" />
+            </button>
+            <AnimatePresence>
+              {showMenu && (
+                <>
+                  <div className="fixed inset-0 z-20" onClick={() => setShowMenu(false)}></div>
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-30 overflow-hidden"
+                  >
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMenu(false);
+                        onRename(project.id, project.name);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <Edit3 size={16} className="text-gray-400" /> Rename
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMenu(false);
+                        onDelete(project.id);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 size={16} /> Delete
+                    </button>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+         </div>
+      </div>
+      <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1">{project.name}</h3>
+      <p className="text-sm text-gray-500 mt-1 line-clamp-2 min-h-[40px]">{project.description}</p>
+      
+      <div className="mt-6 pt-6 border-t border-gray-50 flex items-center justify-between text-xs font-semibold text-gray-400">
+         <div className="flex items-center gap-1.5">
+            <Clock size={14} />
+            <span>{new Date(project.updatedAt?.seconds * 1000).toLocaleDateString()}</span>
+         </div>
+         <div className="flex items-center gap-1.5">
+            <Users size={14} />
+            <span>{1 + (project.teamMembers?.length || 0)}</span>
+         </div>
+      </div>
+
+      <div className="absolute top-4 right-12 opacity-0 group-hover:opacity-100 transition-opacity hidden md:block">
+        <ExternalLink size={16} className="text-blue-400" />
+      </div>
+    </motion.div>
+  );
 }
