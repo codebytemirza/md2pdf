@@ -43,6 +43,7 @@ export function Editor({ projectId, onBack }: { projectId: string | null, onBack
   });
   const [content, setContent] = useState('');
   const [isPreviewOpen, setIsPreviewOpen] = useState(true);
+  const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -192,32 +193,30 @@ export function Editor({ projectId, onBack }: { projectId: string | null, onBack
         </div>
       )}
       {/* Editor Header */}
-      <div className="h-16 border-b border-gray-100 flex items-center justify-between px-6 bg-white shrink-0">
-        <div className="flex items-center gap-4">
+      <div className="h-16 border-b border-gray-100 flex items-center justify-between px-3 md:px-6 bg-white shrink-0 overflow-x-auto no-scrollbar scrollbar-hide">
+        <div className="flex items-center gap-2 md:gap-4 shrink-0">
           <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
-            <ArrowLeft size={20} className="text-gray-500" />
+            <ArrowLeft size={18} className="text-gray-500" />
           </button>
-          <div className="h-6 w-[1px] bg-gray-200"></div>
-          <div>
-            <h2 className="font-bold text-gray-900 flex items-center gap-2">
-              {project.name}
-              {saveStatus === 'saving' ? (
-                 <Loader2 size={14} className="text-blue-500 animate-spin" />
-              ) : (
-                 <CheckCircle2 size={14} className={cn("transition-opacity", saveStatus === 'saved' ? "text-green-500" : "opacity-0")} />
-              )}
-            </h2>
-          </div>
+          <div className="h-6 w-[1px] bg-gray-200 hidden sm:block"></div>
+          <h2 className="font-bold text-gray-900 flex items-center gap-2 text-sm md:text-base whitespace-nowrap">
+            {project.name}
+            {saveStatus === 'saving' ? (
+               <Loader2 size={12} className="text-blue-500 animate-spin" />
+            ) : (
+               <CheckCircle2 size={12} className={cn("transition-opacity", saveStatus === 'saved' ? "text-green-500" : "opacity-0")} />
+            )}
+          </h2>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 shrink-0 ml-4">
           <button 
              onClick={() => fileInputRef.current?.click()}
-             className="px-4 py-2.5 bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-all border border-gray-200 flex items-center gap-2 text-sm font-semibold shadow-sm"
+             className="px-3 md:px-4 py-2 bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-all border border-gray-200 flex items-center gap-2 text-[10px] md:text-sm font-semibold shadow-sm"
              title="Upload MD File"
           >
-             <Upload size={18} className="text-gray-400" />
-             Import MD
+             <Upload size={16} className="text-gray-400" />
+             <span className="hidden sm:inline">Import MD</span>
              <input 
                type="file" 
                ref={fileInputRef} 
@@ -232,104 +231,128 @@ export function Editor({ projectId, onBack }: { projectId: string | null, onBack
           <button 
             onClick={() => setIsPreviewOpen(!isPreviewOpen)}
             className={cn(
-              "p-2.5 rounded-xl transition-all border",
+              "p-2 rounded-xl transition-all border hidden lg:block",
               isPreviewOpen ? "bg-blue-50 border-blue-100 text-blue-600" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
             )}
           >
-            {isPreviewOpen ? <EyeOff size={20} /> : <Eye size={20} />}
-          </button>
-          <button 
-            onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-            className={cn(
-              "p-2.5 rounded-xl transition-all border",
-              isSettingsOpen ? "bg-blue-50 border-blue-100 text-blue-600" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
-            )}
-          >
-            <SettingsIcon size={20} />
+            {isPreviewOpen ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
           <button 
              onClick={handleAiSummary}
              disabled={isAiLoading}
-             className="px-4 py-2.5 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 transition-all disabled:opacity-50 flex items-center gap-2 text-sm font-semibold border border-blue-100/50"
+             className="px-3 md:px-4 py-2 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 transition-all disabled:opacity-50 flex items-center gap-2 text-[10px] md:text-sm font-semibold border border-blue-100/50"
              title="AI Summary"
           >
-             {isAiLoading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
-             AI Insights
+             {isAiLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+             <span className="hidden sm:inline">AI Insights</span>
           </button>
-          <div className="h-6 w-[1px] bg-gray-200 mx-1"></div>
+          <div className="h-6 w-[1px] bg-gray-200 mx-1 hidden sm:block"></div>
           <button 
             onClick={() => handleConvert('pdf')}
             disabled={isConverting}
-            className="bg-blue-600 text-white px-8 py-2.5 rounded-xl font-bold text-sm shadow-xl shadow-blue-100 hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center gap-2 group"
+            className="bg-blue-600 text-white px-4 md:px-8 py-2 rounded-xl font-bold text-[10px] md:text-sm shadow-xl shadow-blue-100 hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center gap-2 group"
           >
             {isConverting ? (
-              <>
-                <Loader2 size={18} className="animate-spin" />
-                Processing...
-              </>
+              <Loader2 size={16} className="animate-spin" />
             ) : (
-              <>
-                <Download size={18} className="group-hover:translate-y-0.5 transition-transform" />
-                Export PDF
-              </>
+              <Download size={16} className="group-hover:translate-y-0.5 transition-transform" />
             )}
+            <span className="hidden sm:inline">{isConverting ? 'Processing...' : 'Export PDF'}</span>
+            <span className="sm:hidden">PDF</span>
           </button>
           <button 
-            onClick={() => handleConvert('html')}
-            className="p-2.5 border border-gray-200 rounded-xl text-gray-500 hover:bg-gray-50 transition-all"
-            title="Export HTML"
+            onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+            className={cn(
+              "p-2 rounded-xl transition-all border ml-1",
+              isSettingsOpen ? "bg-blue-50 border-blue-100 text-blue-600" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+            )}
           >
-            <Sparkles size={20} />
+            <SettingsIcon size={18} />
           </button>
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden relative">
-        {/* Main Workspace */}
+      <div className="flex-1 flex flex-col relative overflow-hidden">
+        {/* Mobile View Switcher */}
+        <div className="lg:hidden flex border-b border-gray-100 shrink-0 bg-white">
+           <button 
+             onClick={() => setMobileView('edit')}
+             className={cn(
+                "flex-1 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all",
+                mobileView === 'edit' ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-400"
+             )}
+           >
+              Editor
+           </button>
+           <button 
+             onClick={() => setMobileView('preview')}
+             className={cn(
+                "flex-1 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all",
+                mobileView === 'preview' ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-400"
+             )}
+           >
+              Live Preview
+           </button>
+        </div>
+
         <div className="flex-1 flex overflow-hidden">
           {/* Markdown Input */}
-          <div className={cn("flex-1 h-full flex flex-col transition-all", isPreviewOpen ? "w-1/2" : "w-full")}>
+          <div className={cn(
+            "flex-1 h-full flex flex-col transition-all",
+            mobileView === 'preview' ? "hidden lg:flex" : "flex",
+            isPreviewOpen ? "lg:w-1/2" : "lg:w-full"
+          )}>
+            <div className="p-3 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
+               <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                     <div className="w-2 h-2 rounded-full bg-red-400"></div>
+                     <div className="w-2 h-2 rounded-full bg-amber-400"></div>
+                     <div className="w-2 h-2 rounded-full bg-green-400"></div>
+                  </div>
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2">Smart Editor</span>
+               </div>
+            </div>
             <textarea 
               value={content}
               onChange={handleContentChange}
               placeholder="Paste your markdown here..."
-              className="flex-1 w-full p-10 font-mono text-sm resize-none outline-none text-gray-800 bg-white"
+              className="flex-1 w-full p-6 md:p-10 font-mono text-[13px] md:text-sm resize-none outline-none text-gray-800 bg-white leading-relaxed"
             />
           </div>
 
           {/* Real-time Preview */}
-          {isPreviewOpen && (
-            <div className="w-1/2 h-full bg-gray-50 border-l border-gray-100 flex flex-col">
-               <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+          {(isPreviewOpen || mobileView === 'preview') && (
+            <div className={cn(
+              "h-full bg-gray-50 border-l border-gray-100 flex flex-col transition-all",
+              mobileView === 'edit' ? "hidden lg:flex" : "flex",
+              isPreviewOpen ? "lg:w-1/2 w-full" : "hidden"
+            )}>
+               <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-sm sticky top-0 z-10 w-full overflow-hidden">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2">
                     <Eye size={12} /> Live Preview
                   </span>
-                  <div className="flex gap-2">
-                     <button className="p-1.5 hover:bg-gray-100 rounded-lg"><Maximize2 size={14} className="text-gray-400" /></button>
-                  </div>
                </div>
                
-               {aiSummary && (
-                 <div className="m-10 mb-0 p-6 bg-blue-50/50 border border-blue-100 rounded-3xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                       <button onClick={() => setAiSummary(null)} className="p-1 text-blue-400 hover:text-blue-600 bg-white rounded-lg shadow-sm"><XIcon size={14} /></button>
+               <div className="flex-1 overflow-auto p-6 md:p-10 prose prose-blue max-w-none prose-img:rounded-2xl">
+                  {aiSummary && (
+                    <div className="mb-8 p-6 bg-blue-50/50 border border-blue-100 rounded-3xl relative overflow-hidden group">
+                       <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => setAiSummary(null)} className="p-1 text-blue-400 hover:text-blue-600 bg-white rounded-lg shadow-sm"><XIcon size={14} /></button>
+                       </div>
+                       <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+                          <Sparkles size={12} /> AI Insight
+                       </h4>
+                       <p className="text-sm text-blue-900 leading-relaxed font-medium">{aiSummary}</p>
                     </div>
-                    <h4 className="text-xs font-black text-blue-600 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
-                       <Sparkles size={12} /> Intelligence Summary
-                    </h4>
-                    <p className="text-sm text-blue-900 leading-relaxed font-medium">{aiSummary}</p>
-                 </div>
-               )}
-
-               <div className={cn(
-                  "flex-1 overflow-auto p-10 prose prose-blue max-w-none prose-img:rounded-2xl transition-all duration-500",
-                  `template-${project.settings.template}`
-               )}>
-                  <Markdown>{content || '*Preview will appear here...*'}</Markdown>
+                  )}
+                  <div className={cn("transition-all duration-500", `template-${project.settings.template}`)}>
+                    <Markdown>{content || '*Preview will appear here...*'}</Markdown>
+                  </div>
                </div>
             </div>
           )}
         </div>
+      </div>
 
         {/* Settings Panel */}
         <AnimatePresence>
@@ -422,7 +445,6 @@ export function Editor({ projectId, onBack }: { projectId: string | null, onBack
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
     </div>
   );
 }
