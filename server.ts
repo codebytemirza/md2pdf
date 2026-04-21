@@ -7,7 +7,7 @@ import { marked } from "marked";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import JSZip from "jszip";
-import { generatePdf } from "./src/services/pdfService.js";
+import { generatePdf } from "./src/services/pdfService";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
