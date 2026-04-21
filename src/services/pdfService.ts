@@ -1,32 +1,40 @@
-import puppeteer from 'puppeteer-core';
-import chromium from '@sparticuz/chromium';
+import { jsPDF } from 'jspdf';
+import { convert } from 'html-to-text';
 
 export async function generatePdf(html: string, options: any = {}) {
-  let browser = null;
-  
-  try {
-    const isProd = process.env.NODE_ENV === 'production';
-    
-    browser = await puppeteer.launch({
-      args: isProd ? chromium.args : ['--no-sandbox', '--disable-setuid-sandbox'],
-      defaultViewport: chromium.defaultViewport,
-      executablePath: isProd ? await chromium.executablePath() : '/usr/bin/google-chrome',
-      headless: chromium.headless as any,
-    });
+  // Convert HTML to simple text format
+  const text = convert(html, {
+    wordwrap: 100, // Wrap at approximately 100 characters per line
+    selectors: [
+      { selector: 'a', options: { ignoreHref: true } },
+      { selector: 'img', format: 'skip' }
+    ]
+  });
 
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    
-    const pdf = await page.pdf({
-      format: options.format || 'A4',
-      margin: options.margin || { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
-      printBackground: true,
-    });
+  // Create document
+  const format = options.format === 'Letter' ? 'letter' : 'a4';
+  const doc = new jsPDF({
+    format: format,
+    unit: 'mm',
+  });
 
-    return pdf;
-  } finally {
-    if (browser) {
-      await browser.close();
+  // Calculate generic text dimensions
+  const lines = doc.splitTextToSize(text, 180); // Width of content area (A4 is 210mm wide)
+  let y = 15; // Top margin
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const lineHeight = 7;
+
+  // Render text to pages
+  for (let i = 0; i < lines.length; i++) {
+    if (y > pageHeight - 15) {
+      doc.addPage();
+      y = 15;
     }
+    doc.text(lines[i], 15, y);
+    y += lineHeight;
   }
+
+  // Generate binary Buffer
+  const arrayBuffer = doc.output('arraybuffer');
+  return Buffer.from(arrayBuffer);
 }
