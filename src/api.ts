@@ -1,7 +1,7 @@
 import express from "express";
 import { marked } from "marked";
 import JSZip from "jszip";
-import { generatePdf } from "./services/pdfService";
+import { generatePdf } from "./services/pdfService.js";
 
 const api = express.Router();
 

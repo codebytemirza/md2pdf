@@ -1,1 +1,0 @@
-{"version":3,"file":"index.ts","sources":["D:\\md2pdf\\api\\index.ts"],"names":[],"mappings":"AAAA,OAAO,GAAG,MAAM,WAAW,CAAC;AAC5B,eAAe,GAAG,CAAC","sourcesContent":["import app from '../server';\r\nexport default app;\r\n"]}
