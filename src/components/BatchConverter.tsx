@@ -1,11 +1,14 @@
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, File, X, Loader2, Download, AlertCircle } from 'lucide-react';
+import { Upload, File, X, Loader2, Download, AlertCircle, CheckCircle2, Settings } from 'lucide-react';
 import JSZip from 'jszip';
+import { PDF_TEMPLATES } from '../constants/templates';
+import { cn } from '../lib/utils';
 
 export function BatchConverter() {
   const [files, setFiles] = useState<{ file: File, id: string, status: 'pending' | 'converting' | 'completed' | 'error' }[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(PDF_TEMPLATES[0].id);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const newFiles = acceptedFiles.map(f => ({
@@ -38,7 +41,12 @@ export function BatchConverter() {
       const response = await fetch('/api/convert-batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items })
+        body: JSON.stringify({ 
+          items,
+          globalConfig: {
+             customCss: PDF_TEMPLATES.find(t => t.id === selectedTemplate)?.css || ''
+          }
+        })
       });
 
       if (!response.ok) throw new Error('Batch conversion failed');
@@ -67,80 +75,112 @@ export function BatchConverter() {
          <p className="text-gray-500 mt-2">Upload multiple markdown files to convert them all at once into a ZIP archive.</p>
       </div>
 
-      <div 
-        {...getRootProps()} 
-        className={`
-          border-3 border-dashed rounded-3xl p-16 transition-all cursor-pointer text-center
-          ${isDragActive ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200 bg-white hover:border-blue-400 hover:bg-gray-50'}
-        `}
-      >
-        <input {...getInputProps()} />
-        <div className="flex flex-col items-center">
-           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <Upload className="text-blue-600" size={32} />
-           </div>
-           <p className="text-xl font-bold text-gray-900">Drag & drop markdown files here</p>
-           <p className="text-gray-400 mt-1">or click to select files from your computer</p>
-        </div>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <div className="lg:col-span-2 space-y-8">
+          <div 
+            {...getRootProps()} 
+            className={`
+              border-3 border-dashed rounded-3xl p-16 transition-all cursor-pointer text-center
+              ${isDragActive ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200 bg-white hover:border-blue-400 hover:bg-gray-50'}
+            `}
+          >
+            <input {...getInputProps()} />
+            <div className="flex flex-col items-center">
+               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                  <Upload className="text-blue-600" size={32} />
+               </div>
+               <p className="text-xl font-bold text-gray-900">Drag & drop markdown files here</p>
+               <p className="text-gray-400 mt-1">or click to select files from your computer</p>
+            </div>
+          </div>
 
-      {files.length > 0 && (
-        <div className="mt-10 space-y-4">
-           <div className="flex items-center justify-between">
-              <h3 className="font-bold text-gray-900">{files.length} Files Ready</h3>
-              <button 
-                onClick={() => setFiles([])}
-                className="text-sm text-red-600 font-bold hover:underline"
+          {files.length > 0 && (
+            <div className="space-y-4">
+               <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-gray-900">{files.length} Files Ready</h3>
+                  <button 
+                    onClick={() => setFiles([])}
+                    className="text-sm text-red-600 font-bold hover:underline"
+                  >
+                    Clear All
+                  </button>
+               </div>
+               
+               <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
+                  {files.map((f) => (
+                    <div key={f.id} className="flex items-center justify-between p-4 border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
+                       <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                             <File className="text-gray-400" size={20} />
+                          </div>
+                          <div>
+                             <p className="text-sm font-bold text-gray-900">{f.file.name}</p>
+                             <p className="text-xs text-gray-400">{(f.file.size / 1024).toFixed(1)} KB</p>
+                          </div>
+                       </div>
+                       <div className="flex items-center gap-4">
+                          {f.status === 'completed' && <CheckCircle2 className="text-green-500" size={18} />}
+                          {f.status === 'error' && <AlertCircle className="text-red-500" size={18} />}
+                          <button 
+                            onClick={() => removeFile(f.id)}
+                            className="p-2 hover:bg-red-50 rounded-lg text-gray-300 hover:text-red-500 transition-colors"
+                          >
+                             <X size={18} />
+                          </button>
+                       </div>
+                    </div>
+                  ))}
+               </div>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-6">
+           <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm sticky top-6">
+              <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2 uppercase tracking-tighter text-sm">
+                <Settings size={16} className="text-blue-600" /> Export Style
+              </h3>
+              <div className="space-y-2 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
+                 {PDF_TEMPLATES.map((t) => (
+                   <button
+                     key={t.id}
+                     onClick={() => setSelectedTemplate(t.id)}
+                     className={cn(
+                       "w-full text-left p-3 rounded-xl border transition-all text-sm group",
+                       selectedTemplate === t.id 
+                        ? "border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-100" 
+                        : "border-gray-100 bg-white hover:border-gray-300 text-gray-600"
+                     )}
+                   >
+                     <div className="flex items-center justify-between">
+                        <p className="font-bold">{t.name}</p>
+                        {selectedTemplate === t.id && <CheckCircle2 size={12} />}
+                     </div>
+                     <p className="text-[10px] opacity-60 line-clamp-1">{t.description}</p>
+                   </button>
+                 ))}
+              </div>
+
+               <button 
+                onClick={processBatch}
+                disabled={isProcessing || files.length === 0}
+                className="w-full mt-6 bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:shadow-none"
               >
-                Clear All
+                {isProcessing ? (
+                  <>
+                    <Loader2 size={24} className="animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Download size={24} />
+                    Export All (.zip)
+                  </>
+                )}
               </button>
            </div>
-           
-           <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
-              {files.map((f) => (
-                <div key={f.id} className="flex items-center justify-between p-4 border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
-                   <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
-                         <File className="text-gray-400" size={20} />
-                      </div>
-                      <div>
-                         <p className="text-sm font-bold text-gray-900">{f.file.name}</p>
-                         <p className="text-xs text-gray-400">{(f.file.size / 1024).toFixed(1)} KB</p>
-                      </div>
-                   </div>
-                   <div className="flex items-center gap-4">
-                      {f.status === 'completed' && <CheckCircle className="text-green-500" size={18} />}
-                      {f.status === 'error' && <AlertCircle className="text-red-500" size={18} />}
-                      <button 
-                        onClick={() => removeFile(f.id)}
-                        className="p-2 hover:bg-red-50 rounded-lg text-gray-300 hover:text-red-500 transition-colors"
-                      >
-                         <X size={18} />
-                      </button>
-                   </div>
-                </div>
-              ))}
-           </div>
-
-           <button 
-             onClick={processBatch}
-             disabled={isProcessing}
-             className="w-full mt-6 bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
-           >
-             {isProcessing ? (
-               <>
-                 <Loader2 size={24} className="animate-spin" />
-                 Processing Batch...
-               </>
-             ) : (
-               <>
-                 <Download size={24} />
-                 Convert & Download All (.zip)
-               </>
-             )}
-           </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }

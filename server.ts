@@ -77,6 +77,10 @@ async function startServer() {
       
       const result = await mdToPdf({ content: markdown }, pdfConfig);
 
+      if (!result || !result.content) {
+        throw new Error("PDF generation returned empty content");
+      }
+
       if (outputFormat === 'html') {
           res.setHeader('Content-Type', 'text/html');
           return res.send(result.content);
@@ -84,8 +88,9 @@ async function startServer() {
 
       // Default PDF
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename=converted-${Date.now()}.pdf`);
-      res.send(result.content);
+      res.setHeader('Content-Disposition', `attachment; filename="converted-${Date.now()}.pdf"`);
+      res.setHeader('Content-Length', result.content.length);
+      res.end(result.content, 'binary');
 
     } catch (error: any) {
       console.error("Conversion error:", error);
