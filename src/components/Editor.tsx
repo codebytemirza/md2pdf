@@ -26,7 +26,17 @@ import { cn } from '../lib/utils';
 import confetti from 'canvas-confetti';
 
 export function Editor({ projectId, onBack }: { projectId: string | null, onBack: () => void }) {
-  const [project, setProject] = useState<any>(null);
+  const [project, setProject] = useState<any>(projectId ? null : {
+    name: 'Quick Convert',
+    content: '# Quick Conversion\nPaste your content here...',
+    settings: {
+      template: 'minimal',
+      paperSize: 'A4',
+      margins: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
+      customCss: '',
+      watermark: ''
+    }
+  });
   const [content, setContent] = useState('');
   const [isPreviewOpen, setIsPreviewOpen] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -61,8 +71,8 @@ export function Editor({ projectId, onBack }: { projectId: string | null, onBack
             content: newContent,
             updatedAt: Timestamp.now()
           });
-          setSaveStatus('saved');
         }
+        setSaveStatus('saved');
       } catch (err) {
         setSaveStatus('error');
       }
@@ -70,12 +80,15 @@ export function Editor({ projectId, onBack }: { projectId: string | null, onBack
   };
 
   const updateSettings = async (newSettings: any) => {
-    if (!projectId || !project) return;
     const mergedSettings = { ...project.settings, ...newSettings };
-    await updateDoc(doc(db, 'projects', projectId), {
-      settings: mergedSettings,
-      updatedAt: Timestamp.now()
-    });
+    setProject({ ...project, settings: mergedSettings });
+    
+    if (projectId) {
+      await updateDoc(doc(db, 'projects', projectId), {
+        settings: mergedSettings,
+        updatedAt: Timestamp.now()
+      });
+    }
   };
 
   const handleConvert = async (format: 'pdf' | 'html' = 'pdf') => {
@@ -258,7 +271,7 @@ export function Editor({ projectId, onBack }: { projectId: string | null, onBack
                 <div>
                    <label className="text-sm font-bold text-gray-900 block mb-3 uppercase tracking-tighter">PDF Style Template</label>
                    <div className="grid grid-cols-1 gap-3">
-                      {PDF_TEMPLATES.slice(0, 10).map(t => (
+                      {PDF_TEMPLATES.map(t => (
                         <button 
                           key={t.id}
                           onClick={() => updateSettings({ template: t.id, customCss: t.css })}

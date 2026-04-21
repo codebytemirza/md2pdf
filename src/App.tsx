@@ -27,7 +27,7 @@ import { Notifications } from './components/Notifications';
 import { BatchConverter } from './components/BatchConverter';
 import { cn } from './lib/utils';
 import { db } from './lib/firebase';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, Timestamp } from 'firebase/firestore';
 
 type View = 'dashboard' | 'editor' | 'batch' | 'admin' | 'settings';
 
@@ -37,6 +37,36 @@ export default function App() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [notificationCount, setNotificationCount] = useState(0);
+
+  const handleCreateProject = async () => {
+    if (!user) return;
+    const name = window.confirm('Create a new project?') ? `Project ${Date.now().toString().slice(-4)}` : null;
+    if (!name) return;
+
+    try {
+      const docRef = await addDoc(collection(db, 'projects'), {
+        name,
+        description: 'Collaborative markdown project',
+        ownerId: user.uid,
+        teamMembers: [],
+        settings: {
+          template: 'minimal',
+          paperSize: 'A4',
+          margins: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
+          customCss: '',
+          watermark: '',
+          signature: ''
+        },
+        content: '# New Project\nStart writing...',
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
+      });
+      setSelectedProjectId(docRef.id);
+      setActiveView('editor');
+    } catch (error) {
+      console.error("Error creating project:", error);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -87,15 +117,15 @@ export default function App() {
   const renderView = () => {
     switch (activeView) {
       case 'dashboard':
-        return <ProjectList onSelectProject={(id) => { setSelectedProjectId(id); setActiveView('editor'); }} />;
+        return <ProjectList onSelectProject={(id) => { setSelectedProjectId(id); setActiveView('editor'); }} onCreateProject={handleCreateProject} />;
       case 'batch':
         return <BatchConverter />;
       case 'editor':
-        return <Editor projectId={selectedProjectId} onBack={() => setActiveView('dashboard')} />;
+        return <Editor projectId={selectedProjectId} onBack={() => { setActiveView('dashboard'); setSelectedProjectId(null); }} />;
       case 'admin':
         return isAdmin ? <AdminPanel /> : <div>Access Denied</div>;
       default:
-        return <ProjectList onSelectProject={(id) => { setSelectedProjectId(id); setActiveView('editor'); }} />;
+        return <ProjectList onSelectProject={(id) => { setSelectedProjectId(id); setActiveView('editor'); }} onCreateProject={handleCreateProject} />;
     }
   };
 
@@ -136,8 +166,15 @@ export default function App() {
           />
           <SidebarItem 
             icon={<FileCode size={20}/>} 
+            label="Single Convert" 
+            active={activeView === 'editor' && !selectedProjectId} 
+            onClick={() => { setSelectedProjectId(null); setActiveView('editor'); }} 
+            collapsed={!isSidebarOpen} 
+          />
+          <SidebarItem 
+            icon={<FileCode size={20}/>} 
             label="Editor" 
-            active={activeView === 'editor'} 
+            active={activeView === 'editor' && !!selectedProjectId} 
             onClick={() => setActiveView('editor')} 
             collapsed={!isSidebarOpen} 
           />
@@ -194,7 +231,10 @@ export default function App() {
                  )}
                </div>
                <div className="h-8 w-[1px] bg-gray-100"></div>
-               <button className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all flex items-center gap-2">
+               <button 
+                 onClick={handleCreateProject}
+                 className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all flex items-center gap-2"
+               >
                  <Plus size={18} /> New Project
                </button>
             </div>

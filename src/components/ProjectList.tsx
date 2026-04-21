@@ -6,7 +6,7 @@ import { Plus, Search, Folder, Clock, Users, MoreVertical, ExternalLink } from '
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 
-export function ProjectList({ onSelectProject }: { onSelectProject: (id: string) => void }) {
+export function ProjectList({ onSelectProject, onCreateProject }: { onSelectProject: (id: string) => void, onCreateProject: () => void }) {
   const { user } = useAuth();
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,30 +32,6 @@ export function ProjectList({ onSelectProject }: { onSelectProject: (id: string)
     return () => unsubscribe();
   }, [user]);
 
-  const createProject = async () => {
-    if (!user) return;
-    const name = prompt('Project Name:');
-    if (!name) return;
-
-    await addDoc(collection(db, 'projects'), {
-      name,
-      description: 'New conversion project',
-      ownerId: user.uid,
-      teamMembers: [],
-      settings: {
-        template: 'minimal',
-        paperSize: 'A4',
-        margins: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
-        customCss: '',
-        watermark: '',
-        signature: ''
-      },
-      content: '# Hello World\nStart writing your markdown here...',
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now()
-    });
-  };
-
   const filteredProjects = projects.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
@@ -66,7 +42,7 @@ export function ProjectList({ onSelectProject }: { onSelectProject: (id: string)
            <p className="text-gray-500 mt-1">Manage and organize your markdown conversions.</p>
         </div>
         <button 
-          onClick={createProject}
+          onClick={onCreateProject}
           className="flex items-center gap-2 bg-white text-gray-900 px-6 py-3 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-all font-bold active:scale-95"
         >
           <Plus size={20} className="text-blue-600" /> Create Project
